@@ -1,1 +1,1 @@
-# Python-News-Project
+# Python "News" Project
