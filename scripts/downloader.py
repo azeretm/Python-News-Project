@@ -2,6 +2,7 @@
 import os
 import requests
 import pandas as pd
+import re
 from time import sleep
 from datetime import datetime
 from urllib.parse import urlparse
@@ -110,6 +111,8 @@ class DownloaderAktualne(Downloader):
         
         super().__init__(url, save_to, verbose)
      
+        
+        
     def getDate(self, item):
         '''
         '''
@@ -132,6 +135,8 @@ class DownloaderAktualne(Downloader):
             is_updated = True
             
         return is_updated, date, time 
+    
+    
     
     def parseArticle(self, item):
         '''
@@ -195,8 +200,30 @@ class DownloaderIdnes(Downloader):
     def __init__(self, url, save_to, verbose=False):
         
         super().__init__(url, save_to, verbose)    
-       
+      
         
+    
+    def getDate(self, item):
+        # Finds date and time when the article was published
+        time_label = item.findAll("span", {"class": "time"})
+        
+        
+        if time_label != []:
+            date = re.findall('\d{4}\-\d{2}\-\d{2}', str(time_label))[0]
+            time = re.findall('\d{2}\:\d{2}\:\d{2}', str(time_label))[0]
+        else:
+            date = None
+            time = None
+                    
+        # Checks whether the article was updated ("aktualizováno")
+        is_updated = False 
+        if ("aktualizováno" in str(time_label)) is True:
+                is_updated = True
+         
+            
+        return is_updated, date, time 
+    
+    
     
     def parseArticle(self, item):
         '''
@@ -208,21 +235,7 @@ class DownloaderIdnes(Downloader):
         article_id = link.split(".")[-1]
         article_url = link
         
-        # Finds date and time when the article was published
-        time_label = item.findAll("span", {"class": "time"})
-        is_updated = False
-        
-        if time_label != []:
-            date = time_label[0]["datetime"]
-            time = date
-            
-            # Checks whether the article was updated ("aktualizováno")
-            if time_label[0].find("span") is not None:
-                is_updated = True
-        else:
-            date = None
-            time = None
-        
+        is_updated, date, time = self.getDate(item)    
             
         # Gets the article headline
         headline = item.find("h3").text.strip()
@@ -269,8 +282,8 @@ class DownloaderIdnes(Downloader):
     
 
 
-d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", save_to="data/articles_Aktualne.cz.csv", verbose=True)
-d.downloadHeadlines()
+#d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", save_to="data/articles_Aktualne.cz.csv", verbose=True)
+#d.downloadHeadlines()
 #d.saveToCsv()
 #print(d.articles)
         
