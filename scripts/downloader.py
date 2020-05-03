@@ -82,10 +82,11 @@ class Downloader:
     
    
     
-    def saveToCsv(self, data):
+    def saveToCsv(self):
         '''
         '''
-        file_path = "../" + self.save_to
+        data = self.articles_df
+        file_path = self.save_to
         
         if os.path.exists(file_path):
             # Saves new rows to existing file
@@ -109,7 +110,28 @@ class DownloaderAktualne(Downloader):
         
         super().__init__(url, save_to, verbose)
      
+    def getDate(self, item):
+        '''
+        '''
         
+        # Finds date and time when the article was published
+        time_label = item.findAll("div", {"class": "timeline__label"})[0]
+        str_raw_date = ''.join(time_label.find_all(text=True, recursive=False)).strip()
+        
+        if str_raw_date[0].isdigit() is True:
+            raw_date = datetime.strptime(str_raw_date, '%d. %m. %Y %H:%M')
+            date = raw_date.date()
+            time = raw_date.time()
+        else:
+            date = None
+            time = None
+                  
+        # Checks whether the article was updated ("aktualizováno")
+        is_updated = False
+        if time_label.find("span") is not None:
+            is_updated = True
+            
+        return is_updated, date, time 
     
     def parseArticle(self, item):
         '''
@@ -121,16 +143,9 @@ class DownloaderAktualne(Downloader):
         article_id = link.split("/")[3]
         article_url = self.url_base + link
         
-        # Finds date and time when the article was published
-        time_label = item.findAll("div", {"class": "timeline__label"})[0]
-        date = ''.join(time_label.find_all(text=True, recursive=False)).strip()
-        time = date
+        is_updated, date, time = self.getDate(item)
         
-        # Checks whether the article was updated ("aktualizováno")
-        is_updated = False
-        if time_label.find("span") is not None:
-            is_updated = True
-        
+                
         # Gets the article headline
         headline = ''.join(item.find("h3").find_all(text=True, recursive=False)).strip()
         
@@ -169,7 +184,7 @@ class DownloaderAktualne(Downloader):
                 self.parseArticle(post)
         
         
-        self.articles_df = self.saveToPandas()
+        self.articles_df = self.saveToPandas(self.articles)
 
 
 
@@ -254,8 +269,8 @@ class DownloaderIdnes(Downloader):
     
 
 
-#d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", dest_folder="data/", verbose=True)
-#d.downloadHeadlines()
+d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", save_to="data/articles_Aktualne.cz.csv", verbose=True)
+d.downloadHeadlines()
 #d.saveToCsv()
 #print(d.articles)
         
