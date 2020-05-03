@@ -1,4 +1,5 @@
 # Downloader
+import os
 import requests
 import pandas as pd
 from time import sleep
@@ -14,11 +15,11 @@ class Downloader:
         Downlaods headlines.
     '''
     
-    def __init__(self, url, dest_folder, verbose):
+    def __init__(self, url, save_to, verbose):
         
         
         self.url, self.url_path, self.url_base = self.splitUrl(url)
-        self.dest_folder = dest_folder
+        self.save_to = save_to
         
         self.verbose = verbose
         
@@ -39,7 +40,7 @@ class Downloader:
         
         url = urlparse(url)
         
-        url_path = url.path + "?" + url.query
+        url_path = url.path
         url_base = url.scheme + "://" + url.netloc
         checked_url = url_base + url_path
         
@@ -72,21 +73,31 @@ class Downloader:
   
               
     
-    def saveToPandas(self):
+    def saveToPandas(self, data):
         '''
         '''
-        df = pd.DataFrame(self.articles, columns=["article_id", "slug", "date", "time", "is_updated", "headline", "excerpt", "article_url", "scraped_at"])
+        df = pd.DataFrame(data, columns=["article_id", "slug", "date", "time", "is_updated", "headline", "excerpt", "article_url", "scraped_at"])
         
         return df
     
    
     
-    def saveToCsv(self):
+    def saveToCsv(self, data):
         '''
         '''
-        file_name = "articles_aktualne.cz__saved_" + datetime.now().strftime("%Y-%m-%d") + ".csv"
+        file_path = "../" + self.save_to
         
-        self.articles_df.to_csv("../" + self.dest_folder + file_name, index=False)
+        if os.path.exists(file_path):
+            # Saves new rows to existing file
+            df = pd.read_csv(file_path, sep=",")
+        
+            df_diff = pd.concat([df, data], ignore_index=True)
+            df_diff = df_diff.drop_duplicates(subset="article_id", keep="last")
+            df_diff.to_csv(file_path, index=False)
+        
+        else:
+            # Saves to new file
+            data.to_csv(file_path, index=False)
 
 
 
@@ -94,9 +105,9 @@ class DownloaderAktualne(Downloader):
     '''
     '''
     
-    def __init__(self, url, dest_folder, verbose=False):
+    def __init__(self, url, save_to, verbose=False):
         
-        super().__init__(url, dest_folder, verbose)
+        super().__init__(url, save_to, verbose)
      
         
     
@@ -166,9 +177,9 @@ class DownloaderIdnes(Downloader):
     '''
     '''
     
-    def __init__(self, url, dest_folder, verbose=False):
+    def __init__(self, url, save_to, verbose=False):
         
-        super().__init__(url, dest_folder, verbose)    
+        super().__init__(url, save_to, verbose)    
        
         
     
@@ -191,7 +202,7 @@ class DownloaderIdnes(Downloader):
             time = date
             
             # Checks whether the article was updated ("aktualizováno")
-            if time_label.find("span") is not None:
+            if time_label[0].find("span") is not None:
                 is_updated = True
         else:
             date = None
@@ -227,7 +238,7 @@ class DownloaderIdnes(Downloader):
         '''
         '''
         
-        for i in range(1,3):
+        for i in range(1,4):
         
             posts_url = self.url + str(i)
             soup = self.getSoup(posts_url)
@@ -238,7 +249,7 @@ class DownloaderIdnes(Downloader):
                 self.parseArticle(post)
         
         
-        self.articles_df = self.saveToPandas()
+        self.articles_df = self.saveToPandas(self.articles)
     
     
 
@@ -250,7 +261,10 @@ class DownloaderIdnes(Downloader):
         
     
 
-#d = DownloaderIdnes("https://www.idnes.cz/zpravy/domaci/", dest_folder="data/", verbose=True)
+#d = DownloaderIdnes("https://www.idnes.cz/zpravy/domaci/", save_to="data/articles_iDnes.cz.csv", verbose=True)
 #d.downloadHeadlines()
-#print(d.articles)
+#a=d.articles_df
+#d.saveToCsv(d.articles_df)
+
+
 
