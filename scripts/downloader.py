@@ -10,117 +10,100 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 
-
 class Downloader:
     '''
         Downlaods headlines.
     '''
-    
+
     def __init__(self, url, save_to, verbose):
-        
-        
+
         self.url, self.url_path, self.url_base = self.splitUrl(url)
         self.save_to = save_to
-        
+
         self.verbose = verbose
-        
-        
+
         self.articles = []
         self.articles_df = None
-        
-        
-        if self.verbose:
-            print("Succesfully initialized Downloader.")
-   
-     
-    
+
+
     def splitUrl(self, url):
         '''
             ...
         '''
-        
+
         url = urlparse(url)
-        
+
         url_path = url.path
         url_base = url.scheme + "://" + url.netloc
         checked_url = url_base + url_path
-        
+
         return checked_url, url_base, url_path
-    
-    
-    
+
     def getSoup(self, link):
-        ''' 
         '''
-        
+        '''
+
         sleep(1)
         r = requests.get(link)
-        
+
         return BeautifulSoup(r.text, "lxml")
-    
-  
-    
+
     def parseArticle(self, item):
         '''
         '''
-        raise Exception("Method for parsing article is not implemented.")      
-         
-    
-    
+        raise Exception("Method for parsing article is not implemented.")
+
     def downloadHeadlines(self, limit="01-01-2019"):
         '''
-        '''  
+        '''
         raise Exception("method for downloading headlines is not implmented.")
-  
-              
-    
+
     def saveToPandas(self, data):
         '''
         '''
         df = pd.DataFrame(data, columns=["article_id", "slug", "date", "time", "is_updated", "headline", "excerpt", "article_url", "scraped_at"])
-        
+
         return df
-    
-   
-    
+
     def saveToCsv(self):
         '''
         '''
         data = self.articles_df
         file_path = self.save_to
-        
+
         if os.path.exists(file_path):
             # Saves new rows to existing file
             df = pd.read_csv(file_path, sep=",")
-        
+
             df_diff = pd.concat([df, data], ignore_index=True)
             df_diff = df_diff.drop_duplicates(subset="article_id", keep="last")
             df_diff.to_csv(file_path, index=False)
-        
+
         else:
             # Saves to new file
             data.to_csv(file_path, index=False)
 
 
-
 class DownloaderAktualne(Downloader):
     '''
     '''
-    
+
     def __init__(self, url, save_to, verbose=False):
-        
+
         super().__init__(url, save_to, verbose)
-     
         
-        
+        if self.verbose:
+            print("Succesfully initialized DownloaderAktualne.")
+            
+
     def getDate(self, item):
         '''
         '''
-        
+
         # Finds date and time when the article was published
         time_label = item.findAll("div", {"class": "timeline__label"})[0]
         str_raw_date = ''.join(time_label.find_all(text=True, recursive=False)).strip()
-        
+
         if str_raw_date[0].isdigit() is True:
             raw_date = datetime.strptime(str_raw_date, '%d. %m. %Y %H:%M')
             date = raw_date.date()
@@ -128,16 +111,14 @@ class DownloaderAktualne(Downloader):
         else:
             date = None
             time = None
-                  
+
         # Checks whether the article was updated ("aktualizováno")
         is_updated = False
         if time_label.find("span") is not None:
             is_updated = True
-            
-        return is_updated, date, time 
-    
-    
-    
+
+        return is_updated, date, time
+
     def parseArticle(self, item):
         '''
         '''
@@ -147,152 +128,179 @@ class DownloaderAktualne(Downloader):
         slug = link.split("/")[2]
         article_id = link.split("/")[3]
         article_url = self.url_base + link
-        
+
         is_updated, date, time = self.getDate(item)
-        
-                
+
         # Gets the article headline
         headline = ''.join(item.find("h3").find_all(text=True, recursive=False)).strip()
-        
+
         # Gets the article excerpt
         excerpt = item.findAll("div", {"class": "small-box__desc"})[0].text.strip()
-        
+
         # Creates article object
         article = {
-                "article_id": article_id,
-                "slug": slug,
-                "date": date,
-                "time": time,
-                "is_updated": is_updated,
-                "headline": headline,
-                "excerpt": excerpt,
-                "article_url": article_url,
-                "scraped_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            "article_id": article_id,
+            "slug": slug,
+            "date": date,
+            "time": time,
+            "is_updated": is_updated,
+            "headline": headline,
+            "excerpt": excerpt,
+            "article_url": article_url,
+            "scraped_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         }
-        
+
         self.articles.append(article)
-       
-        
-    
-    def downloadHeadlines(self):
+
+    def downloadHeadlines(self, from_page = 1, to_page = 5, bulk_size = 40):
         '''
         '''
         
-        for i in range(1):
+        if from_page > to_page and from_page <= 0:
+            raise Exception("Defined range of articles is invalid (valid: to_page >= from_page > 0).")
+        
+        if bulk_size <= 0:
+            raise Exception("Bulk size must be greater than 0.")    
             
-            posts_url = self.url + "?offset=" + str(i * 20)
+
+        count_bulks = 0
+
+        for i in range(from_page, to_page+1):
+            
+            posts_url = self.url + "?offset=" + str((i-1) * 20)
             soup = self.getSoup(posts_url)
-            
+
             posts = soup.findAll("div", {"class": "timeline"})[0].findAll("div", {"class": "small-box"})
-            
+
             for post in posts:
                 self.parseArticle(post)
-        
-        
-        self.articles_df = self.saveToPandas(self.articles)
+            
+            
+            if (i % bulk_size) == 0:
+                count_bulks += 1
+                sleep(2)
+                
+                if self.verbose:
+                    print("%s. bulk of articles successfully downloaded." % count_bulks)
 
+
+        self.articles_df = self.saveToPandas(self.articles)
+        
+        if self.verbose:
+            print("Articles were successfully downloaded. Access DataFrame '.articles_df' or json list '.articles'.")
 
 
 class DownloaderIdnes(Downloader):
     '''
     '''
-    
+
     def __init__(self, url, save_to, verbose=False):
+
+        super().__init__(url, save_to, verbose)
         
-        super().__init__(url, save_to, verbose)    
-      
-        
-    
+        if self.verbose:
+            print("Succesfully initialized DownloaderIdnes.")
+            
+
     def getDate(self, item):
         # Finds date and time when the article was published
         time_label = item.findAll("span", {"class": "time"})
-        
-        
+
         if time_label != []:
             date = re.findall('\d{4}\-\d{2}\-\d{2}', str(time_label))[0]
             time = re.findall('\d{2}\:\d{2}\:\d{2}', str(time_label))[0]
         else:
             date = None
             time = None
-                    
+
         # Checks whether the article was updated ("aktualizováno")
-        is_updated = False 
+        is_updated = False
         if ("aktualizováno" in str(time_label)) is True:
-                is_updated = True
-         
-            
-        return is_updated, date, time 
-    
-    
-    
+            is_updated = True
+
+        return is_updated, date, time
+
     def parseArticle(self, item):
         '''
         '''
 
         # Finds article_url, gets article ID and Slug from the link
-        link = item.findAll("a", {"class":"art-link"})[0]["href"]
+        link = item.findAll("a", {"class": "art-link"})[0]["href"]
         slug = link.split(".")[2].split("/")[-1]
         article_id = link.split(".")[-1]
         article_url = link
-        
-        is_updated, date, time = self.getDate(item)    
-            
+
+        is_updated, date, time = self.getDate(item)
+
         # Gets the article headline
         headline = item.find("h3").text.strip()
-        
+
         # Gets the article excerpt
         excerpt = item.findAll("p", {"class": "perex"})[0].text.strip()
 
         # Creates article object
         article = {
-                "article_id": article_id,
-                "slug": slug,
-                "date": date,
-                "time": time,
-                "is_updated": is_updated,
-                "headline": headline,
-                "excerpt": excerpt,
-                "article_url": article_url,
-                "scraped_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            "article_id": article_id,
+            "slug": slug,
+            "date": date,
+            "time": time,
+            "is_updated": is_updated,
+            "headline": headline,
+            "excerpt": excerpt,
+            "article_url": article_url,
+            "scraped_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         }
-        
+
         # Rules out adding Advertisement placeholder to the dataset
         if link != "https://www.example.com":
             self.articles.append(article)
-    
-    
-    
-    def downloadHeadlines(self):
+
+    def downloadHeadlines(self, from_page = 1, to_page = 5, bulk_size = 40):
         '''
         '''
         
-        for i in range(1,4):
+        if from_page > to_page:
+            raise Exception("Defined range of articles is invalid (from_page > to_page).")
         
+        if bulk_size <= 0:
+            raise Exception("Bulk size must be greater than 0.")    
+        
+        
+        count_bulks = 0
+
+        for i in range(from_page, to_page+1):
+            
             posts_url = self.url + str(i)
             soup = self.getSoup(posts_url)
-            
+
             posts = soup.find(id="list-art-count").findAll("div", {"class": "art"})
-            
+
             for post in posts:
                 self.parseArticle(post)
-        
-        
+            
+            
+            if (i % bulk_size) == 0:
+                count_bulks += 1
+                sleep(2)
+                
+                if self.verbose:
+                    print("%s. bulk of articles successfully downloaded." % count_bulks)
+
+
         self.articles_df = self.saveToPandas(self.articles)
-    
-    
+        
+        if self.verbose:
+            print("Articles were successfully downloaded. Access DataFrame '.articles_df' or json list '.articles'.")
+
 
 
 #d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", save_to="data/articles_Aktualne.cz.csv", verbose=True)
-#d.downloadHeadlines()
-#d.saveToCsv()
-#print(d.articles)
-        
-    
+# d.downloadHeadlines()
+# d.saveToCsv()
+# print(d.articles)
+
 
 #d = DownloaderIdnes("https://www.idnes.cz/zpravy/domaci/", save_to="data/articles_iDnes.cz.csv", verbose=True)
-#d.downloadHeadlines()
-#a=d.articles_df
-#d.saveToCsv(d.articles_df)
-
-
-
+# d.downloadHeadlines()
+# a=d.articles_df
+# d.saveToCsv(d.articles_df)
