@@ -12,12 +12,12 @@ from tqdm import tqdm
 
 class Downloader:
     '''
-        Downlaods headlines.
+        Main class for Downloader, all the necessary methods are outlined here.
     '''
 
     def __init__(self, url, save_to, verbose):
 
-        self.url, self.url_path, self.url_base = self.splitUrl(url)
+        self.url, self.url_base, self.url_path = self.splitUrl(url)
         self.save_to = save_to
 
         self.verbose = verbose
@@ -28,7 +28,7 @@ class Downloader:
 
     def splitUrl(self, url):
         '''
-            ...
+            Checks the URL and splits it into base and path parts.
         '''
 
         url = urlparse(url)
@@ -39,34 +39,44 @@ class Downloader:
 
         return checked_url, url_base, url_path
 
+
     def getSoup(self, link):
         '''
+            Downloads the page and creates BeautifulSoup.
         '''
 
-        sleep(1)
+        sleep(1) # From Aktualne.cz robots.txt
         r = requests.get(link)
 
         return BeautifulSoup(r.text, "lxml")
+    
 
     def parseArticle(self, item):
         '''
+            Implemented in child class.
         '''
         raise Exception("Method for parsing article is not implemented.")
 
+
     def downloadHeadlines(self, limit="01-01-2019"):
         '''
+            Implemented in child class.
         '''
-        raise Exception("method for downloading headlines is not implmented.")
+        raise Exception("Method for downloading headlines is not implmented.")
+
 
     def saveToPandas(self, data):
         '''
+            Saves the articles objects into pd.DataFrame.
         '''
         df = pd.DataFrame(data, columns=["article_id", "slug", "date", "time", "is_updated", "headline", "excerpt", "article_url", "scraped_at"])
 
         return df
 
+
     def saveToCsv(self):
         '''
+            Saves the DataFrame to CSV.
         '''
         data = self.articles_df
         file_path = self.save_to
@@ -84,8 +94,10 @@ class Downloader:
             data.to_csv(file_path, index=False)
 
 
+
 class DownloaderAktualne(Downloader):
     '''
+        Downloader for Aktualne.cz.
     '''
 
     def __init__(self, url, save_to, verbose=False):
@@ -98,6 +110,7 @@ class DownloaderAktualne(Downloader):
 
     def getDate(self, item):
         '''
+            Parses time, date and is_updated from html block.
         '''
 
         # Finds date and time when the article was published
@@ -119,14 +132,16 @@ class DownloaderAktualne(Downloader):
 
         return is_updated, date, time
 
+
     def parseArticle(self, item):
         '''
+            Parses article item and appends it to the list of articles.
         '''
 
         # Finds article_url, gets article ID and Slug from the link
         link = item.findAll("a")[0]["href"]
-        slug = link.split("/")[2]
-        article_id = link.split("/")[3]
+        slug = link.split("/")[-3]
+        article_id = link.split("/")[-2]
         article_url = self.url_base + link
 
         is_updated, date, time = self.getDate(item)
@@ -152,8 +167,10 @@ class DownloaderAktualne(Downloader):
 
         self.articles.append(article)
 
+
     def downloadHeadlines(self, from_page = 1, to_page = 5, bulk_size = 40):
         '''
+            Downloads the requested pages with articles.
         '''
         
         if from_page > to_page and from_page <= 0:
@@ -190,8 +207,10 @@ class DownloaderAktualne(Downloader):
             print("Articles were successfully downloaded. Access DataFrame '.articles_df' or json list '.articles'.")
 
 
+
 class DownloaderIdnes(Downloader):
     '''
+        Downloader for iDnes.cz.
     '''
 
     def __init__(self, url, save_to, verbose=False):
@@ -203,6 +222,10 @@ class DownloaderIdnes(Downloader):
             
 
     def getDate(self, item):
+        '''
+            Parses time, date and is_updated from html block.
+        '''
+        
         # Finds date and time when the article was published
         time_label = item.findAll("span", {"class": "time"})
 
@@ -220,14 +243,17 @@ class DownloaderIdnes(Downloader):
 
         return is_updated, date, time
 
+
     def parseArticle(self, item):
         '''
+            Parses article item and appends it to the list of articles.
         '''
 
         # Finds article_url, gets article ID and Slug from the link
         link = item.findAll("a", {"class": "art-link"})[0]["href"]
         slug = link.split(".")[2].split("/")[-1]
         article_id = link.split(".")[-1]
+        article_id = article_id.split("/")[0]
         article_url = link
 
         is_updated, date, time = self.getDate(item)
@@ -255,8 +281,10 @@ class DownloaderIdnes(Downloader):
         if link != "https://www.example.com":
             self.articles.append(article)
 
+
     def downloadHeadlines(self, from_page = 1, to_page = 5, bulk_size = 40):
         '''
+            Downloads the requested pages with articles.
         '''
         
         if from_page > to_page:
