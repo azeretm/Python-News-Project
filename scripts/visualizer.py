@@ -11,9 +11,10 @@ class Visualizer:
         Helper class for data visualization, handles the data upload
     '''
 
-    def __init__(self, files=[], verbose=False):
+    def __init__(self, files=[], verbose=False, dropna=False):
 
         self.verbose = verbose
+        self.dropna = dropna
         self.data = self.uploadData(files)
 
         if self.verbose:
@@ -39,5 +40,8 @@ class Visualizer:
 
             if self.verbose:
                 print("Data from %s successfully uploaded." % file[1])
+        
+        if self.dropna:
+            data = data.dropna().copy()
 
         return data
