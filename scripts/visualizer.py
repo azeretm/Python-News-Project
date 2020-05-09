@@ -52,8 +52,8 @@ class Visualizer:
         '''
             Gets/sets the range of records for which the dates overlap
         '''
-    
-        data = self.data.dropna().copy()
+        
+        data = self.data
         grouped = data[["source", "date"]].groupby(["source"])
     
         # Gets min common date
@@ -66,7 +66,10 @@ class Visualizer:
         
         # Crops data to fit only the range of dates which overlap
         if set_range is True:
-            data = data[(data["date"] >= date_from) & (data["date"] <= date_to)]       
+            data = data[(data["date"] >= date_from) & (data["date"] <= date_to)]    
+            
+            if self.verbose:
+                print("Data were successfully cropped and range from %s to %s." % (date_from, date_to))
         
         # Returns the range if requested
         if get_range is True:
