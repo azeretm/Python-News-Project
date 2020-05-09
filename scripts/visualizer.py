@@ -32,11 +32,12 @@ class Visualizer:
         data = pd.DataFrame()
 
         for file in tqdm(files):
-            df = pd.read_csv(file, sep=",")
-
+            df = pd.read_csv(file[1], sep=",")
+            df["source"] = file[0]
+            
             data = pd.concat([data, df], ignore_index=True)
 
             if self.verbose:
-                print("Data from %s successfully uploaded." % file)
+                print("Data from %s successfully uploaded." % file[1])
 
         return data
