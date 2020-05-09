@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 class Visualizer:
     '''
+        Helper class for data visualization, handles the data upload
     '''
 
     def __init__(self, files=[], verbose=False):
@@ -20,13 +21,17 @@ class Visualizer:
 
     def uploadData(self, files):
         '''
+            Handles data upload from the given files list
         '''
         if not files:
             raise Exception("Empty list passed.")
+        
+        if not isinstance(files, list):
+            raise Exception("Variable files is not a list, it is %s." % type(files))
 
         data = pd.DataFrame()
 
-        for file in files:
+        for file in tqdm(files):
             df = pd.read_csv(file, sep=",")
 
             data = pd.concat([data, df], ignore_index=True)

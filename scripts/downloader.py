@@ -85,7 +85,8 @@ class Downloader:
             # Saves new rows to existing file
             df = pd.read_csv(file_path, sep=",")
 
-            df_diff = pd.concat([df, data], ignore_index=True)
+            # Order of the data is important for updating the article date since we keep the last record
+            df_diff = pd.concat([df, data], ignore_index=True) 
             df_diff = df_diff.drop_duplicates(subset="article_id", keep="last")
             df_diff.to_csv(file_path, index=False)
 
@@ -182,7 +183,7 @@ class DownloaderAktualne(Downloader):
 
         count_bulks = 0
 
-        for i in range(from_page, to_page+1):
+        for i in tqdm(range(from_page, to_page+1)):
             
             posts_url = self.url + "?offset=" + str((i-1) * 20)
             soup = self.getSoup(posts_url)
@@ -296,7 +297,7 @@ class DownloaderIdnes(Downloader):
         
         count_bulks = 0
 
-        for i in range(from_page, to_page+1):
+        for i in tqdm(range(from_page, to_page+1)):
             
             posts_url = self.url + str(i)
             soup = self.getSoup(posts_url)
