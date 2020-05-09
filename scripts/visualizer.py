@@ -20,6 +20,7 @@ class Visualizer:
         if self.verbose:
             print("Visualizer successfully initialized.")
 
+
     def uploadData(self, files):
         '''
             Handles data upload from the given files list
@@ -45,3 +46,28 @@ class Visualizer:
             data = data.dropna().copy()
 
         return data
+
+
+    def visualizerDateRange(self, get_range=True, set_range=False):
+        '''
+            Gets/sets the range of records for which the dates overlap
+        '''
+    
+        data = self.data.dropna().copy()
+        grouped = data[["source", "date"]].groupby(["source"])
+    
+        # Gets min common date
+        min_dates = grouped.min()
+        date_from = max(min_dates["date"])
+        
+        # Gets max common date
+        max_dates = grouped.max()
+        date_to = min(max_dates["date"])
+        
+        # Crops data to fit only the range of dates which overlap
+        if set_range is True:
+            data = data[(data["date"] >= date_from) & (data["date"] <= date_to)]       
+        
+        # Returns the range if requested
+        if get_range is True:
+            return (date_from, date_to)
