@@ -3,6 +3,6 @@
 
 data/*
 !data/articles_Aktualne.cz.csv
-!data/articles_iDnes.cs.csv
+!data/articles_iDnes.cz.csv
 
 __pycache__

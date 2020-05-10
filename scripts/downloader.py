@@ -141,9 +141,10 @@ class DownloaderAktualne(Downloader):
 
         # Finds article_url, gets article ID and Slug from the link
         link = item.findAll("a")[0]["href"]
-        slug = link.split("/")[-3]
-        article_id = link.split("/")[-2]
+        article_id = link.rsplit("/", 2)[1]
+        slug = link.rsplit("/", 2)[0].rsplit("/", 1)[1]
         article_url = self.url_base + link
+              
 
         is_updated, date, time = self.getDate(item)
 
@@ -263,7 +264,7 @@ class DownloaderIdnes(Downloader):
         headline = item.find("h3").text.strip()
 
         # Gets the article excerpt
-        excerpt = item.findAll("p", {"class": "perex"})[0].text.strip()
+        excerpt = ''.join(item.find("p").find_all(text=True, recursive=False)).strip()
 
         # Creates article object
         article = {
