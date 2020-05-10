@@ -2,4 +2,7 @@
 .ipynb_checkpoints/
 
 data/*
+!data/articles_Aktualne.cz.csv
+!data/articles_iDnes.cs.csv
+
 __pycache__

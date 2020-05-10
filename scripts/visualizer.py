@@ -66,7 +66,7 @@ class Visualizer:
         
         # Crops data to fit only the range of dates which overlap
         if set_range is True:
-            data = data[(data["date"] >= date_from) & (data["date"] <= date_to)]    
+            self.data = data[(data["date"] >= date_from) & (data["date"] <= date_to)]    
             
             if self.verbose:
                 print("Data were successfully cropped and range from %s to %s." % (date_from, date_to))
