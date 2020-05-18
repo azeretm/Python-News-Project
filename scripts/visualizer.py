@@ -74,3 +74,20 @@ class Visualizer:
         # Returns the range if requested
         if get_range is True:
             return (date_from, date_to)
+      
+    
+    def extendDataFrame(self, data, months, weekdays):
+        '''
+            Creates new columns with weekday and hours from the date and time respectively
+        '''
+
+        # Work with date
+        data["date"] = pd.to_datetime(data["date"])
+        data["month"] = pd.Categorical(data["date"].dt.month_name(), categories = months, ordered = True)
+        data["weekday"] = pd.Categorical(data["date"].dt.day_name(), categories = weekdays, ordered = True)
+
+        # Works with time
+        data["hour"] = pd.to_datetime(data["time"]).dt.hour
+
+
+        return data

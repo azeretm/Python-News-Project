@@ -49,7 +49,7 @@ class Downloader:
         r = requests.get(link)
 
         return BeautifulSoup(r.text, "lxml")
-    
+
 
     def parseArticle(self, item):
         '''
@@ -86,7 +86,7 @@ class Downloader:
             df = pd.read_csv(file_path, sep=",")
 
             # Order of the data is important for updating the article date since we keep the last record
-            df_diff = pd.concat([df, data], ignore_index=True) 
+            df_diff = pd.concat([df, data], ignore_index=True)
             df_diff = df_diff.drop_duplicates(subset="article_id", keep="last")
             df_diff.to_csv(file_path, index=False)
 
@@ -104,10 +104,10 @@ class DownloaderAktualne(Downloader):
     def __init__(self, url, save_to, verbose=False):
 
         super().__init__(url, save_to, verbose)
-        
+
         if self.verbose:
             print("Succesfully initialized DownloaderAktualne.")
-            
+
 
     def getDate(self, item):
         '''
@@ -144,7 +144,7 @@ class DownloaderAktualne(Downloader):
         article_id = link.rsplit("/", 2)[1]
         slug = link.rsplit("/", 2)[0].rsplit("/", 1)[1]
         article_url = self.url_base + link
-              
+
 
         is_updated, date, time = self.getDate(item)
 
@@ -174,18 +174,18 @@ class DownloaderAktualne(Downloader):
         '''
             Downloads the requested pages with articles.
         '''
-        
+
         if from_page > to_page and from_page <= 0:
             raise Exception("Defined range of articles is invalid (valid: to_page >= from_page > 0).")
-        
+
         if bulk_size <= 0:
-            raise Exception("Bulk size must be greater than 0.")    
-            
+            raise Exception("Bulk size must be greater than 0.")
+
 
         count_bulks = 0
 
         for i in tqdm(range(from_page, to_page+1)):
-            
+
             posts_url = self.url + "?offset=" + str((i-1) * 20)
             soup = self.getSoup(posts_url)
 
@@ -193,18 +193,18 @@ class DownloaderAktualne(Downloader):
 
             for post in posts:
                 self.parseArticle(post)
-            
-            
+
+
             if (i % bulk_size) == 0:
                 count_bulks += 1
                 sleep(2)
-                
+
                 if self.verbose:
                     print("%s. bulk of articles successfully downloaded." % count_bulks)
 
 
         self.articles_df = self.saveToPandas(self.articles)
-        
+
         if self.verbose:
             print("Articles were successfully downloaded. Access DataFrame '.articles_df' or json list '.articles'.")
 
@@ -218,16 +218,16 @@ class DownloaderIdnes(Downloader):
     def __init__(self, url, save_to, verbose=False):
 
         super().__init__(url, save_to, verbose)
-        
+
         if self.verbose:
             print("Succesfully initialized DownloaderIdnes.")
-            
+
 
     def getDate(self, item):
         '''
             Parses time, date and is_updated from html block.
         '''
-        
+
         # Finds date and time when the article was published
         time_label = item.findAll("span", {"class": "time"})
 
@@ -288,18 +288,18 @@ class DownloaderIdnes(Downloader):
         '''
             Downloads the requested pages with articles.
         '''
-        
+
         if from_page > to_page:
             raise Exception("Defined range of articles is invalid (from_page > to_page).")
-        
+
         if bulk_size <= 0:
-            raise Exception("Bulk size must be greater than 0.")    
-        
-        
+            raise Exception("Bulk size must be greater than 0.")
+
+
         count_bulks = 0
 
         for i in tqdm(range(from_page, to_page+1)):
-            
+
             posts_url = self.url + str(i)
             soup = self.getSoup(posts_url)
 
@@ -307,30 +307,18 @@ class DownloaderIdnes(Downloader):
 
             for post in posts:
                 self.parseArticle(post)
-            
-            
+
+
             if (i % bulk_size) == 0:
                 count_bulks += 1
                 sleep(2)
-                
+
                 if self.verbose:
                     print("%s. bulk of articles successfully downloaded." % count_bulks)
 
 
         self.articles_df = self.saveToPandas(self.articles)
-        
+
         if self.verbose:
             print("Articles were successfully downloaded. Access DataFrame '.articles_df' or json list '.articles'.")
 
-
-
-#d = DownloaderAktualne("https://zpravy.aktualne.cz/domaci/", save_to="data/articles_Aktualne.cz.csv", verbose=True)
-# d.downloadHeadlines()
-# d.saveToCsv()
-# print(d.articles)
-
-
-#d = DownloaderIdnes("https://www.idnes.cz/zpravy/domaci/", save_to="data/articles_iDnes.cz.csv", verbose=True)
-# d.downloadHeadlines()
-# a=d.articles_df
-# d.saveToCsv(d.articles_df)
