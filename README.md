@@ -28,4 +28,4 @@ For this purpose a [H2O.ai](https://www.h2o.ai/) open-source platform is used.
 ### 3. Visualize the data
 In [HeadlinesPlots.ipynb](HeadlinesPlots.ipynb) we used Plotly to display frequencies of articles on Aktuálně.cz and iDnes.cz. One can observe different patterns according to month, weekday or time of the day.
 
-![Number of articles by weekday for both sources](https://drive.google.com/uc?export=view&id=1qF3_ydEhBYTHlkAR9nB5XE-IBNJMfePi)
+![Number of articles by weekday for both sources](https://user-images.githubusercontent.com/2466840/82225882-0af72f00-9926-11ea-9c21-10e2fd306164.png)
